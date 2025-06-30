@@ -1,0 +1,55 @@
+/* Base font and layout */
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: #fafafa;
+  color: #333;
+  line-height: 1.6;
+}
+
+/* General container */
+main {
+  padding: 1rem;
+}
+
+/* Headings */
+h1, h2, h3 {
+  color: #222;
+}
+
+/* Inputs and buttons */
+input, select, textarea, button {
+  font: inherit;
+  padding: 0.5rem;
+  margin: 0.25rem 0;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-sizing: border-box;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: #888;
+}
+
+button {
+  background-color: #0070f3;
+  color: white;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s ease;
+}
+
+button:hover {
+  background-color: #005bb5;
+}
+
+/* Lists */
+ul {
+  padding-left: 1.25rem;
+}
+
+li {
+  margin-bottom: 0.5rem;
+}
