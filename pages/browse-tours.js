@@ -39,19 +39,25 @@ export default function BrowseTours() {
           {reflections.map(ref => {
             const tour = getTourForReflection(ref.tour_id);
             return (
-              <li key={ref.id}>
+              <li key={ref.id} style={{ border: '1px solid #ccc', padding: '1em', marginBottom: '1em' }}>
                 <h3>{tour?.title || 'Untitled Tour'}</h3>
-                <p><strong>Theme:</strong> {tour?.theme}</p>
+                {tour?.audience_type && <p><strong>Audience:</strong> {tour.audience_type}</p>}
                 <ul>
                   {tour?.artworks?.map((art, idx) => (
-                    <li key={idx}>{art.title} by {art.artist} ({art.year}) - {art.location}</li>
+                    <li key={idx}>
+                      <strong>{art.title}</strong>
+                      {art.artist && <> by {art.artist}</>}
+                      {art.year && <> ({art.year})</>}
+                      {art.location && <> – {art.location}</>}
+                      {!art.id && <em> (Other)</em>}
+                    </li>
                   ))}
                 </ul>
                 <div>
                   <h4>Reflection</h4>
-                  <p><strong>What went well?</strong> {ref.question_1}</p>
-                  <p><strong>What could be improved?</strong> {ref.question_2}</p>
-                  <p><strong>Advice to others:</strong> {ref.question_3}</p>
+                  <p><strong>What went well?</strong><br />{ref.question_1}</p>
+                  <p><strong>What could be improved?</strong><br />{ref.question_2}</p>
+                  <p><strong>Advice to others:</strong><br />{ref.question_3}</p>
                 </div>
               </li>
             );

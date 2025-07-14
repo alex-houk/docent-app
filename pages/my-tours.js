@@ -45,7 +45,7 @@ export default function MyTours() {
           <div key={tour.id} style={{ border: '1px solid #ccc', padding: '1em', marginBottom: '1em' }}>
             <h2>{tour.title}</h2>
             <p><strong>Date:</strong> {tour.date_given}</p>
-            <p><strong>Group:</strong> {tour.group_type}</p>
+            <p><strong>Audience:</strong> {tour.audience_type}</p>
 
             <h3>Artworks</h3>
             <ul>

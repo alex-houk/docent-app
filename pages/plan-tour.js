@@ -4,26 +4,59 @@ import { useRouter } from 'next/router';
 
 export default function PlanTour() {
   const [user, setUser] = useState(null);
+  const [orgId, setOrgId] = useState(null);
   const [title, setTitle] = useState('');
   const [artworks, setArtworks] = useState([]);
   const [selectedArtworks, setSelectedArtworks] = useState([]);
   const router = useRouter();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null);
-    });
+    const init = async () => {
+      const { data } = await supabase.auth.getSession();
+      const currentUser = data.session?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
+        const { data: roleData, error } = await supabase
+          .from('user_roles')
+          .select('organization_id')
+          .eq('user_id', currentUser.id)
+          .single();
+
+        if (!error && roleData) {
+          setOrgId(roleData.organization_id);
+          loadArtworks(roleData.organization_id);
+        }
+      }
+    };
+
+    init();
+
     supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const sessionUser = session?.user ?? null;
+      setUser(sessionUser);
+
+      if (sessionUser) {
+        supabase
+          .from('user_roles')
+          .select('organization_id')
+          .eq('user_id', sessionUser.id)
+          .single()
+          .then(({ data: roleData }) => {
+            if (roleData) {
+              setOrgId(roleData.organization_id);
+              loadArtworks(roleData.organization_id);
+            }
+          });
+      }
     });
   }, []);
 
-  useEffect(() => {
-    if (user) loadArtworks();
-  }, [user]);
-
-  const loadArtworks = async () => {
-    const { data, error } = await supabase.from('artworks').select('*');
+  const loadArtworks = async (orgId) => {
+    const { data, error } = await supabase
+      .from('artworks')
+      .select('*')
+      .eq('organization_id', orgId);
     if (!error) setArtworks(data);
   };
 
@@ -40,15 +73,22 @@ export default function PlanTour() {
   };
 
   const handleSubmit = async () => {
-    if (!title || selectedArtworks.length === 0) return alert('Please enter a title and select artworks.');
+    if (!title || selectedArtworks.length === 0 || !orgId) {
+      return alert('Please enter a title and select artworks.');
+    }
+
     const { error } = await supabase.from('tour_plans').insert({
       user_id: user.id,
+      organization_id: orgId,
       title,
-      artworks: selectedArtworks
+      artworks: selectedArtworks,
     });
+
     if (!error) {
       alert('Tour plan saved!');
       router.push('/my-plans');
+    } else {
+      console.error('Error saving tour plan:', error);
     }
   };
 
@@ -57,7 +97,11 @@ export default function PlanTour() {
   return (
     <div>
       <h1>Plan a Tour</h1>
-      <input placeholder="Plan Title" value={title} onChange={(e) => setTitle(e.target.value)} />
+      <input
+        placeholder="Plan Title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+      />
 
       <h3>Selected Artworks (up to 6)</h3>
       <ul>

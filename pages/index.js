@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 
 export default function Home() {
   const [user, setUser] = useState(null);
+  const [role, setRole] = useState(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
@@ -17,6 +18,34 @@ export default function Home() {
       setUser(session?.user ?? null);
     });
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserRole();
+    }
+  }, [user]);
+
+  const fetchUserRole = async () => {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error fetching role:', error);
+      return;
+    }
+
+    const roles = data.map(r => r.role);
+    if (roles.includes('admin')) {
+      setRole('admin');
+    } else if (roles.includes('docent')) {
+      setRole('docent');
+    } else {
+      setRole(null); // Or a fallback
+    }
+  };
+
 
   const handleSignup = async () => {
     const { error } = await supabase.auth.signUp({ email, password });
@@ -65,6 +94,17 @@ export default function Home() {
         <li><a href="/my-plans">View Saved Plans</a></li>
         <li><a href="/browse-tours">Browse Tours</a></li>
       </ul>
+
+      {role === 'admin' && (
+        <>
+          <h2>Admin Pages</h2>
+          <ul>
+            <li><a href="/admin/tour-summary">Tour Summary</a></li>
+            <li><a href="/admin/artwork-summary">Artwork Summary</a></li>
+            <li><a href="/admin/docent-summary">Docent Summary</a></li>
+          </ul>
+        </>
+      )}
     </div>
   );
 }

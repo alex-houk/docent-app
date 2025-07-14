@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 
 export default function Reflect() {
   const [user, setUser] = useState(null);
+  const [orgId, setOrgId] = useState(null);
   const [title, setTitle] = useState('');
   const [groupType, setGroupType] = useState('public');
   const [dateGiven, setDateGiven] = useState('');
@@ -18,17 +19,52 @@ export default function Reflect() {
   const router = useRouter();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null);
-    });
+    const init = async () => {
+      const { data } = await supabase.auth.getSession();
+      const currentUser = data.session?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
+        const { data: roleData, error } = await supabase
+          .from('user_roles')
+          .select('organization_id')
+          .eq('user_id', currentUser.id)
+          .single();
+
+        if (!error) {
+          setOrgId(roleData.organization_id);
+          loadArtworks(roleData.organization_id);
+        }
+      }
+    };
+
+    init();
+
     supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const sessionUser = session?.user ?? null;
+      setUser(sessionUser);
+      if (sessionUser) {
+        supabase
+          .from('user_roles')
+          .select('organization_id')
+          .eq('user_id', sessionUser.id)
+          .single()
+          .then(({ data: roleData }) => {
+            if (roleData) {
+              setOrgId(roleData.organization_id);
+              loadArtworks(roleData.organization_id);
+            }
+          });
+      }
     });
-    loadArtworks();
   }, []);
 
-  const loadArtworks = async () => {
-    const { data, error } = await supabase.from('artworks').select('*');
+  const loadArtworks = async (orgId) => {
+    const { data, error } = await supabase
+      .from('artworks')
+      .select('*')
+      .eq('organization_id', orgId);
+
     if (!error) setAllArtworks(data);
   };
 
@@ -46,15 +82,9 @@ export default function Reflect() {
   };
 
   const handleRemoveArtwork = (index, fromManual = false) => {
-    if (fromManual) {
-      const newList = [...manualArtworks];
-      newList.splice(index, 1);
-      setManualArtworks(newList);
-    } else {
-      const newList = [...selectedArtworks];
-      newList.splice(index, 1);
-      setSelectedArtworks(newList);
-    }
+    const newList = fromManual ? [...manualArtworks] : [...selectedArtworks];
+    newList.splice(index, 1);
+    fromManual ? setManualArtworks(newList) : setSelectedArtworks(newList);
   };
 
   const handleAddManualArtwork = () => {
@@ -65,12 +95,13 @@ export default function Reflect() {
   };
 
   const handleCreateTour = async () => {
-    if (!title || !dateGiven || !user) return;
+    if (!title || !dateGiven || !user || !orgId) return;
 
     const artworksToStore = [...selectedArtworks.map(({ id, title, artist, year, location }) => ({ id, title, artist, year, location })), ...manualArtworks];
 
     const { data, error } = await supabase.from('tour_logs').insert({
       user_id: user.id,
+      organization_id: orgId,
       title,
       audience_type: groupType,
       date_given: dateGiven,
